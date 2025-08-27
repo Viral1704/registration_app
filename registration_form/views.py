@@ -1,4 +1,10 @@
+from datetime import datetime
+
 from flask import Blueprint, render_template, request
+
+from .extensions import db
+
+from .models import Language, Topic, Member
 
 main = Blueprint('main', __name__)
 
@@ -23,8 +29,38 @@ def index():
         print("About:", about)
         print("Learn New Interest:", learn_new_interest)
         print("Interest in Topics:", interest_in_topics)
+
+        # save to database
+        member = Member(
+            email = email,
+            password = password,
+            location = location,
+            first_learn_date = datetime.strptime(first_learn_date, '%Y-%m-%d'),# Convert string to date
+            fav_language = fav_language,
+            about = about,
+            learn_new_interest = (
+                True if learn_new_interest == 'yes' else False
+            )
+                            )
+
+        db.session.add(member)
+
+        for topic_id in interest_in_topics:
+            topic = Topic.query.get(int(topic_id))
+            member.interest_in_topics.append(topic)
+
+        db.session.commit()
+
         return "Form submitted!"
-    return render_template('form.html')
+    
+    languages = Language.query.all()
+    topics = Topic.query.all()
+
+    context = {
+        'languages' : languages,
+        'topics' : topics
+    }
+    return render_template('form.html', **context)
 
 
 
