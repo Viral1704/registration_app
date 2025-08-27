@@ -8,8 +8,13 @@ from .models import Language, Topic, Member
 
 main = Blueprint('main', __name__)
 
-@main.route('/', methods=['GET', 'POST'])
-def index():
+@main.route('/', methods=['GET', 'POST'], defaults = {'member_id' : None})
+@main.route('/<int:member_id>', methods=['GET', 'POST'])
+def index(member_id):
+
+    member = None
+    if member_id:
+        member = Member.query.get_or_404(member_id) # get member info if member_id is provided else 404 error
     if request.method == "POST":
         # geather all info
         email = request.form['email']
@@ -57,8 +62,10 @@ def index():
     topics = Topic.query.all()
 
     context = {
+        'member_id' : member_id,
         'languages' : languages,
-        'topics' : topics
+        'topics' : topics,
+        'member' : member
     }
     return render_template('form.html', **context)
 
