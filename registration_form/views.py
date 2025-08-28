@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
 
 from .extensions import db
 
@@ -15,6 +15,7 @@ def index(member_id):
     member = None
     if member_id:
         member = Member.query.get_or_404(member_id) # get member info if member_id is provided else 404 error
+
     if request.method == "POST":
         # geather all info
         email = request.form['email']
@@ -26,29 +27,42 @@ def index(member_id):
         learn_new_interest = request.form['learn_new_interest']
         interest_in_topics = request.form.getlist('interest_in_topics')
 
-        print("Email:", email)
-        print("Password:", password)
-        print("Location:", location)
-        print("First Learn Date:", first_learn_date)
-        print("Favorite Language:", fav_language)
-        print("About:", about)
-        print("Learn New Interest:", learn_new_interest)
-        print("Interest in Topics:", interest_in_topics)
+        # print("Email:", email)
+        # print("Password:", password)
+        # print("Location:", location)
+        # print("First Learn Date:", first_learn_date)
+        # print("Favorite Language:", fav_language)
+        # print("About:", about)
+        # print("Learn New Interest:", learn_new_interest)
+        # print("Interest in Topics:", interest_in_topics)
+        
+        if member:
+            member.email = email
+            if password:
+                member.password = password
+            member.location = location
+            member.first_learn_date = datetime.strptime(first_learn_date, '%Y-%m-%d')
+            member.fav_language = fav_language
+            member.about = about
+            member.learn_new_interest = True if learn_new_interest == 'yes' else False
 
+            member.interest_in_topics[:] = []
+
+        else:
         # save to database
-        member = Member(
-            email = email,
-            password = password,
-            location = location,
-            first_learn_date = datetime.strptime(first_learn_date, '%Y-%m-%d'),# Convert string to date
-            fav_language = fav_language,
-            about = about,
-            learn_new_interest = (
-                True if learn_new_interest == 'yes' else False
-            )
-                            )
+            member = Member(
+                email = email,
+                password = password,
+                location = location,
+                first_learn_date = datetime.strptime(first_learn_date, '%Y-%m-%d'),# Convert string to date
+                fav_language = fav_language,
+                about = about,
+                learn_new_interest = (
+                    True if learn_new_interest == 'yes' else False
+                )
+                                )
 
-        db.session.add(member)
+            db.session.add(member)
 
         for topic_id in interest_in_topics:
             topic = Topic.query.get(int(topic_id))
@@ -56,7 +70,7 @@ def index(member_id):
 
         db.session.commit()
 
-        return "Form submitted!"
+        return redirect(url_for('main.index', member_id=member.id))
     
     languages = Language.query.all()
     topics = Topic.query.all()
